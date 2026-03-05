@@ -9,14 +9,15 @@ This repository contains the most thorough guide to deploying OpenClaw on a self
 ## Start Here
 
 1. **[README.md](README.md)** — Project overview, audience, and navigation
-2. **[GUIDE.md](GUIDE.md)** — The full deployment guide (14 phases, 2,700 lines)
+2. **[GUIDE.md](GUIDE.md)** — The full deployment guide (15 phases, 2,800+ lines)
 3. **Reference docs** — Deep dives on specific topics (see File Index below)
 
 ## File Index
 
 | File | Format | Lines | Purpose | Relevance |
 |------|--------|-------|---------|-----------|
-| `README.md` | Markdown | ~85 | Project overview, audience, navigation | [essential] |
+| `README.md` | Markdown | ~60 | Project overview, quick start, installer | [essential] |
+| `install.sh` | Bash | ~180 | Safe-defaults installer for VPS tooling | [essential] |
 | `GUIDE.md` | Markdown | 2,700 | Full deployment guide — 14 phases + 8 appendices | [essential] |
 | `AGENTS.md` | Markdown | ~80 | This file — machine-readable project context | [essential] |
 | `Reference/SECURITY.md` | Markdown | 2,600 | VPS/OS hardening, application/LLM security (55 sources) | [reference] |
@@ -28,6 +29,8 @@ This repository contains the most thorough guide to deploying OpenClaw on a self
 | `Reference/SECURITY-PATCHES.md` | Markdown | 107 | Version-specific security patches and action status | [reference] |
 | `Reference/UPGRADE-NOTES.md` | Markdown | 480 | Changelog across OpenClaw releases with deployment impact | [reference] |
 | `Reference/PAI-PIPELINE.md` | Markdown | 280 | Cross-agent pipeline: Gregor ↔ Isidore Cloud architecture | [reference] |
+| `Reference/DATABASE-MAINTENANCE.md` | Markdown | ~120 | Compaction loop prevention, Gregor database baseline | [reference] |
+| `Reference/VOICE-AND-AUDIO.md` | Markdown | ~350 | STT research: cloud/self-hosted providers, Telegram voice, architecture patterns | [reference] |
 | `src/config/openclaw.json.example` | JSON | 93 | Sanitized config template with security annotations | [config] |
 | `src/config/logrotate-openclaw` | Config | 15 | Log rotation configuration | [utility] |
 | `src/scripts/backup.sh` | Bash | 49 | Daily backup with 30-day retention | [utility] |
@@ -52,6 +55,51 @@ This repository contains the most thorough guide to deploying OpenClaw on a self
 | `src/pai-pipeline/pai-overnight.sh` | Bash | ~340 | PAI pipeline: overnight PRD queue coordinator (Layer 7) | [utility] |
 | `src/pai-pipeline/pai-overnight-local.sh` | Bash | ~100 | PAI pipeline: local helper for overnight queue | [utility] |
 | `assets/social-preview.png` | PNG | — | GitHub social preview image (1280x640) | [asset] |
+
+## Repository Map
+
+```
+README.md                             # Project overview + quick start
+GUIDE.md                              # The deployment guide (2,800+ lines, 15 phases)
+AGENTS.md                             # This file — machine-readable project context
+install.sh                            # Safe-defaults installer for VPS tooling
+
+Reference/
+  SECURITY.md                         # VPS/OS hardening + application/LLM security (2,600 lines, 55 sources)
+  COST-AND-ROUTING.md                 # Provider pricing, model routing, ClawRouter analysis
+  IDENTITY-AND-BEHAVIOR.md            # System prompt design, persona patterns, identity-layer security
+  SKILLS-AND-TOOLS.md                 # Skill architecture, tool permissions, supply chain security
+  MEMORY-PLUGIN-RESEARCH.md           # Why built-in memory over external plugins (mem0 eval)
+  CONTEXT-ENGINEERING.md              # Prompt caching, session persistence, memory tuning
+  SECURITY-PATCHES.md                 # Version-specific security patches and action status
+  UPGRADE-NOTES.md                    # Comprehensive changelog across OpenClaw releases
+  PAI-PIPELINE.md                     # Cross-agent pipeline: Gregor ↔ Isidore Cloud architecture
+  DATABASE-MAINTENANCE.md             # Compaction loop prevention, Gregor database baseline
+  VOICE-AND-AUDIO.md                  # STT research: cloud/self-hosted providers, Telegram voice, architecture
+
+src/
+  config/
+    openclaw.json.example             # Sanitized config template with security annotations
+    logrotate-openclaw                # Log rotation config
+  scripts/
+    backup.sh                         # Daily backup with 30-day retention
+    health-check.sh                   # Service health monitor
+    verify-binding.sh                 # Gateway binding verification
+    auto-update.sh                    # Weekly update + security audit
+  pipeline/
+    send.sh / read.sh / status.sh     # Async messaging pipeline (local → bot)
+  pai-pipeline/
+    pai-submit.sh                     # Cross-agent task submission (Gregor → Isidore Cloud)
+    pai-result.sh                     # Result reader with wait/ack modes
+    pai-status.sh                     # Pipeline dashboard (human + JSON output)
+    pai-escalation-submit.sh          # Auto-escalation handler (Layer 5)
+    pai-reverse-handler.sh            # Reverse-task processor via openclaw agent (Layer 6)
+    pai-reverse-watcher.py            # inotify watcher for reverse-tasks/
+    pai-overnight.sh                  # Overnight PRD queue coordinator (Layer 7)
+    pai-overnight-local.sh            # Local helper for overnight queue
+  audit/
+    audit.sh                          # Security audit prompts and tooling
+```
 
 ## Architecture
 
