@@ -4,7 +4,7 @@
 
 ## Purpose
 
-This repository contains the most thorough guide to deploying OpenClaw on a self-hosted VPS. It covers security-hardened setup, provider-agnostic configuration, memory tuning, skill architecture, cost optimization, and production operations. The guide explains the reasoning behind every decision, not just the steps.
+Security-first deployment blueprint for running OpenClaw on a self-hosted VPS. Covers 4-layer permission model, systemd hardening, supply chain lockdown, memory tuning, skill architecture, cost optimization, and production operations. The guide explains the reasoning behind every decision, not just the steps.
 
 ## Start Here
 
@@ -31,6 +31,7 @@ This repository contains the most thorough guide to deploying OpenClaw on a self
 | `Reference/PAI-PIPELINE.md` | Markdown | 280 | Cross-agent pipeline: Gregor ↔ Isidore Cloud architecture | [reference] |
 | `Reference/DATABASE-MAINTENANCE.md` | Markdown | ~120 | Compaction loop prevention, Gregor database baseline | [reference] |
 | `Reference/VOICE-AND-AUDIO.md` | Markdown | ~350 | STT research: cloud/self-hosted providers, Telegram voice, architecture patterns | [reference] |
+| `Reference/KNOWN-BUGS.md` | Markdown | ~250 | Systemic bugs: duplicate messages (7 root causes), silent polling death, cost impact | [reference] |
 | `src/config/openclaw.json.example` | JSON | 93 | Sanitized config template with security annotations | [config] |
 | `src/config/logrotate-openclaw` | Config | 15 | Log rotation configuration | [utility] |
 | `src/scripts/backup.sh` | Bash | 49 | Daily backup with 30-day retention | [utility] |
@@ -76,6 +77,7 @@ Reference/
   PAI-PIPELINE.md                     # Cross-agent pipeline: Gregor ↔ Isidore Cloud architecture
   DATABASE-MAINTENANCE.md             # Compaction loop prevention, Gregor database baseline
   VOICE-AND-AUDIO.md                  # STT research: cloud/self-hosted providers, Telegram voice, architecture
+  KNOWN-BUGS.md                       # Systemic bugs: duplicate messages (7 root causes), silent polling death
 
 src/
   config/
@@ -107,7 +109,7 @@ src/
 
 Two AI agents run on the same VPS as separate Linux users, communicating through a shared filesystem pipeline:
 
-- **Gregor** (`openclaw` user) — OpenClaw/Sonnet via OpenRouter. Always-on Telegram bot for routine tasks. Auto-escalates complex tasks (security reviews, architecture, multi-file refactoring) to Isidore Cloud via PAI pipeline.
+- **Gregor** (`openclaw` user) — OpenClaw/Sonnet via Anthropic. Always-on Telegram bot for routine tasks. Auto-escalates complex tasks (security reviews, architecture, multi-file refactoring) to Isidore Cloud via PAI pipeline.
 - **Isidore Cloud** (`isidore_cloud` user) — Claude Code/Opus. On-demand heavy computation via `claude -p` bridge.
 - **PAI Pipeline** (`/var/lib/pai-pipeline/`) — Bidirectional shared directory with `pai` group permissions (2770 setgid). Forward: Gregor → Isidore (tasks/results). Reverse: Isidore → Gregor (reverse-tasks/reverse-results). Overnight: sequential PRD queue (overnight/). Includes auto-escalation (Layer 5), reverse-task watcher (Layer 6), and overnight queue (Layer 7). See `Reference/PAI-PIPELINE.md`.
 
@@ -115,8 +117,8 @@ Two AI agents run on the same VPS as separate Linux users, communicating through
 
 Key choices that an agent should understand before suggesting modifications:
 
-- **Security model:** 4-layer permission pipeline — `tools.profile` (coarse), `tools.allow/deny` (fine), `exec.security` (shell), `ask` mode (runtime). Documented in GUIDE.md Phase 7.
-- **Provider-agnostic design:** Not locked to any LLM provider. The guide covers Anthropic, OpenAI, OpenRouter, Ollama, and others. Config examples use a models registry for easy switching.
+- **Security model:** 4-layer permission pipeline — `tools.profile` (coarse), `tools.alsoAllow/deny` (fine), `exec.security` (shell), `ask` mode (runtime). Current Gregor config: `profile: "full"`, `alsoAllow: ["cron", "browser"]`, `deny: ["gateway", "nodes"]`, `exec.security: "full"`. Documented in GUIDE.md Phase 7.
+- **LLM provider setup:** The guide covers provider configuration (Anthropic, OpenRouter, Ollama) with cost analysis and routing strategy.
 - **Bundled-only skills strategy:** Zero community (ClawHub) skill installs. Only the 50 bundled skills are used. Rationale: supply chain attack surface (see Reference/SKILLS-AND-TOOLS.md for the ClawHavoc case study).
 - **Local embeddings:** Uses `embeddinggemma-300m` locally instead of cloud-based OpenAI embeddings. Deliberate privacy + cost decision.
 - **Loopback-only gateway:** Gateway bound to 127.0.0.1:18789, never exposed to the internet. All external access via Telegram integration.
