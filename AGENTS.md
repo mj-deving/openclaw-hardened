@@ -1,4 +1,4 @@
-# Agent Context — openclaw-bot
+# Agent Context — openclaw-hardened
 
 > Machine-readable project metadata for AI agents. Humans: see [README.md](README.md).
 
