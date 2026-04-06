@@ -34,8 +34,10 @@ Security-first deployment blueprint for running OpenClaw on a self-hosted VPS. C
 | `Reference/KNOWN-BUGS.md` | Markdown | ~250 | Systemic bugs: duplicate messages (7 root causes), silent polling death, cost impact | [reference] |
 | `Reference/DEFENSE-SYSTEM.md` | Markdown | ~400 | 6-layer prompt injection defense: architecture, STRIDE review, deployment | [reference] |
 | `src/defense/` | TypeScript | ~1800 | 6-layer defense system: sanitizer, scanner, gate, redaction, governor, access control | [security] |
-| `src/defense/proxy/` | TypeScript | ~300 | Defense proxy: Bun HTTP server intercepting LLM API calls at 127.0.0.1:18800 | [security] |
+| `src/defense/plugin/` | TypeScript | ~570 | Defense plugin: 5 hooks into OpenClaw gateway (primary enforcement) | [security] |
+| `src/defense/proxy/` | TypeScript | ~300 | Defense proxy: Bun HTTP server at 127.0.0.1:18800 (fallback) | [security] |
 | `src/defense/__tests__/` | TypeScript | ~1200 | 162 tests covering all defense layers and attack vectors | [tests] |
+| `Reference/CLAWKEEPER.md` | Markdown | ~300 | ClawKeeper adoption: installation, audit domains, commands, comparison | [reference] |
 | `src/config/openclaw.json.example` | JSON | 93 | Sanitized config template with security annotations | [config] |
 | `src/config/logrotate-openclaw` | Config | 15 | Log rotation configuration | [utility] |
 | `src/scripts/backup.sh` | Bash | 49 | Daily backup with 30-day retention | [utility] |
@@ -112,8 +114,13 @@ src/
     layer6-access.ts                  # L6: Access control (path guards, URL safety, DNS pinning)
     patterns.ts                       # Shared secret patterns (18 definitions)
     types.ts / index.ts               # Types and entry point
+    plugin/
+      index.ts                        # Plugin registration (5 hooks into OpenClaw)
+      hooks.ts                        # Hook handler factories
+      types.ts                        # Plugin-specific types
+      package.json                    # Plugin package manifest
     proxy/
-      server.ts                       # Bun HTTP proxy (127.0.0.1:18800)
+      server.ts                       # Bun HTTP proxy (127.0.0.1:18800, fallback)
       config.ts                       # Env-based configuration
       defense-proxy.service           # systemd unit
       deploy.sh                       # Deploy + rollback script
@@ -134,18 +141,30 @@ Two AI agents run on the same VPS as separate Linux users, communicating through
 
 ### 6-Layer Prompt Injection Defense
 
-An app-level defense proxy intercepts all LLM API calls between OpenClaw and upstream providers. Built with Bun + TypeScript. Based on Matthew Berman's 6-layer architecture, informed by Pliny the Prompter's attack research.
+A native OpenClaw plugin enforces the 6-layer defense system via 5 gateway hooks. Built with Bun + TypeScript. Based on Matthew Berman's 6-layer architecture, informed by Pliny the Prompter's attack research.
 
-- **L1: Deterministic Sanitizer** — Unicode NFKC + homoglyph map, base64/base64url/hex/ROT13 decoding, HTML/markdown stripping, system prompt override detection (16 patterns), role injection (8 patterns), zero-width/Zalgo/PUA/emoji stego/whitespace stego removal, wallet address flagging. 100KB limit for ReDoS prevention.
-- **L2: LLM Frontier Scanner** — Nonce-delimited classification prompt (crypto.randomUUID), structured JSON risk scoring (0-100), symmetric score-verdict override.
-- **L3: Outbound Content Gate** — Leaked secrets (18 patterns from shared patterns.ts), internal paths (Unix+Windows+UNC), injection artifacts, exfil URLs, financial data. Redacts all violation types.
-- **L4: Redaction Pipeline** — API keys/tokens, personal emails (50+ provider domains, work subdomains preserved), phone numbers, dollar amounts.
-- **L5: Call Governor** — Rolling-window spend limits (monotonic clock), volume limits with per-caller overrides, lifetime counter, caller-scoped SHA-256 dedup, circuit breaker.
-- **L6: Access Control** — Path guards (30+ denied filenames, 18 denied extensions), URL safety (IPv4+IPv6 private ranges including RFC 3849, DNS resolution with 3s timeout, returns resolved IPs for pinning).
+- **L1: Deterministic Sanitizer** (`message_received` hook) — Unicode NFKC + homoglyph map, base64/base64url/hex/ROT13 decoding, HTML/markdown stripping, system prompt override detection (16 patterns), role injection (8 patterns), zero-width/Zalgo/PUA/emoji stego/whitespace stego removal, wallet address flagging. 100KB limit for ReDoS prevention.
+- **L2: LLM Frontier Scanner** (not wired into hooks) — Nonce-delimited classification prompt, risk scoring 0-100. Available via `scanInput()` for targeted use.
+- **L3: Outbound Content Gate** (`message_sending` + `llm_output` hooks) — Leaked secrets (18 patterns), internal paths (Unix+Windows+UNC), injection artifacts, exfil URLs, financial data. Modifies outbound messages to redact violations before delivery.
+- **L4: Redaction Pipeline** (`message_sending` + `llm_output` hooks) — API keys/tokens, personal emails (50+ provider domains, work subdomains preserved), phone numbers, dollar amounts. Pre-delivery enforcement.
+- **L5: Call Governor** (`llm_input` hook) — Rolling-window spend limits (monotonic clock), volume limits with per-caller overrides, lifetime counter, caller-scoped SHA-256 dedup, circuit breaker. Tracking only (void hook).
+- **L6: Access Control** (`before_tool_call` hook) — Path guards (30+ denied filenames, 18 denied extensions), URL safety (IPv4+IPv6 private ranges, DNS resolution with 3s timeout). Blocks tool calls to sensitive paths/URLs.
 
-**Proxy:** Bun HTTP server at `127.0.0.1:18800`. Routes via `ANTHROPIC_BASE_URL`/`OPENAI_BASE_URL` env vars. Handles Anthropic Messages API and OpenAI-compatible formats. systemd service `defense-proxy.service` ordered Before=openclaw.service. Deploy script with `--rollback` support.
+**Plugin:** 5 hooks registered via `api.registerHook()`. Proxy at `127.0.0.1:18800` preserved as fallback.
 
 **Tests:** 162 tests across 6 files. STRIDE threat model + security review applied (3 CRITICALs, 7 HIGHs, 6 MEDIUMs, 4 LOWs all fixed).
+
+### ClawKeeper (Security Monitor)
+
+ClawKeeper v0.1.0 — security auditing and monitoring plugin. Complements Defense Shield with passive observation:
+
+- **Config audit:** 9 security domains, scores 0-100, actionable findings with auto-fix support
+- **Drift detection:** Watches `openclaw.json` and `AGENTS.md` for boundary changes
+- **Skill scanning:** Static analysis for dangerous patterns (`scan-skill` command)
+- **Event logging:** All 5 hook events to JSONL at `~/.openclaw/workspace/log/`
+- **Commands:** `openclaw clawkeeper audit`, `clawkeeper logs --scan`, `clawkeeper scan-skill`
+
+See [Reference/CLAWKEEPER.md](Reference/CLAWKEEPER.md) for full reference.
 
 ### Architecture Decisions
 
