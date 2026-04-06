@@ -28,14 +28,14 @@ Security-first deployment blueprint for running OpenClaw on a self-hosted VPS. C
 | `Reference/CONTEXT-ENGINEERING.md` | Markdown | 245 | Prompt caching, session persistence, memory tuning | [reference] |
 | `Reference/SECURITY-PATCHES.md` | Markdown | 107 | Version-specific security patches and action status | [reference] |
 | `Reference/UPGRADE-NOTES.md` | Markdown | 480 | Changelog across OpenClaw releases with deployment impact | [reference] |
-| `Reference/PAI-PIPELINE.md` | Markdown | 280 | Cross-agent pipeline: Gregor ↔ Isidore Cloud architecture | [reference] |
-| `Reference/DATABASE-MAINTENANCE.md` | Markdown | ~120 | Compaction loop prevention, Gregor database baseline | [reference] |
+| `Reference/PAI-PIPELINE.md` | Markdown | 280 | Cross-agent pipeline: bot ↔ local agent architecture | [reference] |
+| `Reference/DATABASE-MAINTENANCE.md` | Markdown | ~120 | Compaction loop prevention, bot database baseline | [reference] |
 | `Reference/VOICE-AND-AUDIO.md` | Markdown | ~350 | STT research: cloud/self-hosted providers, Telegram voice, architecture patterns | [reference] |
 | `Reference/KNOWN-BUGS.md` | Markdown | ~250 | Systemic bugs: duplicate messages (7 root causes), silent polling death, cost impact | [reference] |
 | `Reference/DEFENSE-SYSTEM.md` | Markdown | ~400 | 6-layer prompt injection defense: architecture, STRIDE review, deployment | [reference] |
 | `src/defense/` | TypeScript | ~1800 | 6-layer defense system: sanitizer, scanner, gate, redaction, governor, access control | [security] |
 | `src/defense/plugin/` | TypeScript | ~570 | Defense plugin: 5 hook events covering all 6 layers (primary enforcement) | [security] |
-| `src/defense/proxy/` | TypeScript | ~300 | Defense proxy: Bun HTTP server at 127.0.0.1:18800 (fallback) | [security] |
+| `src/defense/proxy/` | TypeScript | ~300 | Defense proxy: Bun HTTP server (inactive, code preserved) | [security] |
 | `src/defense/__tests__/` | TypeScript | ~1200 | 162 tests covering all defense layers and attack vectors | [tests] |
 | `Reference/CLAWKEEPER.md` | Markdown | ~300 | ClawKeeper adoption: installation, audit domains, commands, comparison | [reference] |
 | `src/config/openclaw.json.example` | JSON | 93 | Sanitized config template with security annotations | [config] |
@@ -47,10 +47,10 @@ Security-first deployment blueprint for running OpenClaw on a self-hosted VPS. C
 | `src/pipeline/send.sh` | Bash | 40 | Pipeline: send message to bot | [utility] |
 | `src/pipeline/read.sh` | Bash | 43 | Pipeline: read bot responses | [utility] |
 | `src/pipeline/status.sh` | Bash | 30 | Pipeline: check pipeline status | [utility] |
-| `src/pai-pipeline/pai-submit.sh` | Bash | 109 | PAI pipeline: submit task to Isidore Cloud | [utility] |
+| `src/pai-pipeline/pai-submit.sh` | Bash | 109 | PAI pipeline: submit task to local agent | [utility] |
 | `src/pai-pipeline/pai-result.sh` | Bash | 179 | PAI pipeline: read results with wait/ack modes | [utility] |
 | `src/pai-pipeline/pai-status.sh` | Bash | 106 | PAI pipeline: dashboard (human + JSON output) | [utility] |
-| `src/pai-pipeline/pai-result-notify.sh` | Bash | ~160 | PAI pipeline: result notification to Gregor's inbox | [utility] |
+| `src/pai-pipeline/pai-result-notify.sh` | Bash | ~160 | PAI pipeline: result notification to bot's inbox | [utility] |
 | `src/pai-pipeline/pai-result-watcher.py` | Python | ~100 | PAI pipeline: inotify watcher for results/ | [utility] |
 | `src/pai-pipeline/pai-notify.service` | systemd | 20 | PAI pipeline: watcher service unit | [config] |
 | `src/pai-pipeline/pai-escalation-submit.sh` | Bash | ~80 | PAI pipeline: auto-escalation handler (Layer 5) | [utility] |
@@ -80,8 +80,8 @@ Reference/
   CONTEXT-ENGINEERING.md              # Prompt caching, session persistence, memory tuning
   SECURITY-PATCHES.md                 # Version-specific security patches and action status
   UPGRADE-NOTES.md                    # Comprehensive changelog across OpenClaw releases
-  PAI-PIPELINE.md                     # Cross-agent pipeline: Gregor ↔ Isidore Cloud architecture
-  DATABASE-MAINTENANCE.md             # Compaction loop prevention, Gregor database baseline
+  PAI-PIPELINE.md                     # Cross-agent pipeline: bot ↔ local agent architecture
+  DATABASE-MAINTENANCE.md             # Compaction loop prevention, bot database baseline
   VOICE-AND-AUDIO.md                  # STT research: cloud/self-hosted providers, Telegram voice, architecture
   KNOWN-BUGS.md                       # Systemic bugs: duplicate messages (7 root causes), silent polling death
 
@@ -97,7 +97,7 @@ src/
   pipeline/
     send.sh / read.sh / status.sh     # Async messaging pipeline (local → bot)
   pai-pipeline/
-    pai-submit.sh                     # Cross-agent task submission (Gregor → Isidore Cloud)
+    pai-submit.sh                     # Cross-agent task submission (forward pipeline)
     pai-result.sh                     # Result reader with wait/ack modes
     pai-status.sh                     # Pipeline dashboard (human + JSON output)
     pai-escalation-submit.sh          # Auto-escalation handler (Layer 5)
@@ -119,11 +119,7 @@ src/
       hooks.ts                        # Hook handler factories
       types.ts                        # Plugin-specific types
       package.json                    # Plugin package manifest
-    proxy/
-      server.ts                       # Bun HTTP proxy (127.0.0.1:18800, fallback)
-      config.ts                       # Env-based configuration
-      defense-proxy.service           # systemd unit
-      deploy.sh                       # Deploy + rollback script
+    proxy/                            # Defense proxy (inactive, code preserved in repo)
     __tests__/                        # 162 tests across 6 files
   audit/
     audit.sh                          # Security audit prompts and tooling
@@ -135,9 +131,11 @@ src/
 
 Two AI agents run on the same VPS as separate Linux users, communicating through a shared filesystem pipeline:
 
-- **Gregor** (`openclaw` user) — OpenClaw/Sonnet via Anthropic. Always-on Telegram bot for routine tasks. Auto-escalates complex tasks (security reviews, architecture, multi-file refactoring) to Isidore Cloud via PAI pipeline.
-- **Isidore Cloud** (`isidore_cloud` user) — Claude Code/Opus. On-demand heavy computation via `claude -p` bridge.
-- **PAI Pipeline** (`/var/lib/pai-pipeline/`) — Bidirectional shared directory with `pai` group permissions (2770 setgid). Forward: Gregor → Isidore (tasks/results). Reverse: Isidore → Gregor (reverse-tasks/reverse-results). Overnight: sequential PRD queue (overnight/). Includes auto-escalation (Layer 5), reverse-task watcher (Layer 6), and overnight queue (Layer 7). See `Reference/PAI-PIPELINE.md`.
+> Names used here (primary bot, local agent) are generic -- substitute your actual bot and agent names.
+
+- **Primary bot** (`openclaw` user) — OpenClaw/Sonnet via Anthropic. Always-on Telegram bot for routine tasks. Auto-escalates complex tasks (security reviews, architecture, multi-file refactoring) to the local agent via PAI pipeline.
+- **Local agent** (`isidore_cloud` user) — Claude Code/Opus. On-demand heavy computation via `claude -p` bridge.
+- **PAI Pipeline** (`/var/lib/pai-pipeline/`) — Bidirectional shared directory with `pai` group permissions (2770 setgid). Forward: bot → local agent (tasks/results). Reverse: local agent → bot (reverse-tasks/reverse-results). Overnight: sequential PRD queue (overnight/). Includes auto-escalation (Layer 5), reverse-task watcher (Layer 6), and overnight queue (Layer 7). See `Reference/PAI-PIPELINE.md`.
 
 ### 6-Layer Prompt Injection Defense
 
@@ -150,7 +148,7 @@ A native OpenClaw plugin enforces the 6-layer defense system via 5 gateway hooks
 - **L5: Call Governor** (`llm_input` hook) — Rolling-window spend limits (monotonic clock), volume limits with per-caller overrides, lifetime counter, caller-scoped SHA-256 dedup, circuit breaker. Tracking only (void hook).
 - **L6: Access Control** (`before_tool_call` hook) — Path guards (30+ denied filenames, 18 denied extensions), URL safety (IPv4+IPv6 private ranges, DNS resolution with 3s timeout). Blocks tool calls to sensitive paths/URLs.
 
-**Plugin:** 5 hook events registered via `api.registerHook()`, covering all 6 layers (L1+L2 share `message_received`). Proxy at `127.0.0.1:18800` preserved as fallback.
+**Plugin:** 5 hook events registered via `api.registerHook()`, covering all 6 layers (L1+L2 share `message_received`).
 
 **Tests:** 162 tests across 6 files. STRIDE threat model + security review applied (3 CRITICALs, 7 HIGHs, 6 MEDIUMs, 4 LOWs all fixed).
 
@@ -170,7 +168,7 @@ See [Reference/CLAWKEEPER.md](Reference/CLAWKEEPER.md) for full reference.
 
 Key choices that an agent should understand before suggesting modifications:
 
-- **Security model:** 4-layer permission pipeline — `tools.profile` (coarse), `tools.alsoAllow/deny` (fine), `exec.security` (shell), `ask` mode (runtime). Current Gregor config: `profile: "full"`, `alsoAllow: ["cron", "browser"]`, `deny: ["gateway", "nodes"]`, `exec.security: "full"`. Documented in GUIDE.md Phase 7.
+- **Security model:** 4-layer permission pipeline — `tools.profile` (coarse), `tools.alsoAllow/deny` (fine), `exec.security` (shell), `ask` mode (runtime). Current bot config: `profile: "full"`, `alsoAllow: ["cron", "browser"]`, `deny: ["gateway", "nodes"]`, `exec.security: "full"`. Documented in GUIDE.md Phase 7.
 - **LLM provider setup:** The guide covers provider configuration (Anthropic, OpenRouter, Ollama) with cost analysis and routing strategy.
 - **Bundled-only skills strategy:** Zero community (ClawHub) skill installs. Only the 50 bundled skills are used. Rationale: supply chain attack surface (see Reference/SKILLS-AND-TOOLS.md for the ClawHavoc case study).
 - **Local embeddings:** Uses `embeddinggemma-300m` locally instead of cloud-based OpenAI embeddings. Deliberate privacy + cost decision.
