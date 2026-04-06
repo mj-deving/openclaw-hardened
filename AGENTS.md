@@ -34,7 +34,7 @@ Security-first deployment blueprint for running OpenClaw on a self-hosted VPS. C
 | `Reference/KNOWN-BUGS.md` | Markdown | ~250 | Systemic bugs: duplicate messages (7 root causes), silent polling death, cost impact | [reference] |
 | `Reference/DEFENSE-SYSTEM.md` | Markdown | ~400 | 6-layer prompt injection defense: architecture, STRIDE review, deployment | [reference] |
 | `src/defense/` | TypeScript | ~1800 | 6-layer defense system: sanitizer, scanner, gate, redaction, governor, access control | [security] |
-| `src/defense/plugin/` | TypeScript | ~570 | Defense plugin: 5 hooks into OpenClaw gateway (primary enforcement) | [security] |
+| `src/defense/plugin/` | TypeScript | ~570 | Defense plugin: 5 hook events covering all 6 layers (primary enforcement) | [security] |
 | `src/defense/proxy/` | TypeScript | ~300 | Defense proxy: Bun HTTP server at 127.0.0.1:18800 (fallback) | [security] |
 | `src/defense/__tests__/` | TypeScript | ~1200 | 162 tests covering all defense layers and attack vectors | [tests] |
 | `Reference/CLAWKEEPER.md` | Markdown | ~300 | ClawKeeper adoption: installation, audit domains, commands, comparison | [reference] |
@@ -115,7 +115,7 @@ src/
     patterns.ts                       # Shared secret patterns (18 definitions)
     types.ts / index.ts               # Types and entry point
     plugin/
-      index.ts                        # Plugin registration (5 hooks into OpenClaw)
+      index.ts                        # Plugin registration (5 hook events, all 6 layers)
       hooks.ts                        # Hook handler factories
       types.ts                        # Plugin-specific types
       package.json                    # Plugin package manifest
@@ -144,13 +144,13 @@ Two AI agents run on the same VPS as separate Linux users, communicating through
 A native OpenClaw plugin enforces the 6-layer defense system via 5 gateway hooks. Built with Bun + TypeScript. Based on Matthew Berman's 6-layer architecture, informed by Pliny the Prompter's attack research.
 
 - **L1: Deterministic Sanitizer** (`message_received` hook) — Unicode NFKC + homoglyph map, base64/base64url/hex/ROT13 decoding, HTML/markdown stripping, system prompt override detection (16 patterns), role injection (8 patterns), zero-width/Zalgo/PUA/emoji stego/whitespace stego removal, wallet address flagging. 100KB limit for ReDoS prevention.
-- **L2: LLM Frontier Scanner** (not wired into hooks) — Nonce-delimited classification prompt, risk scoring 0-100. Available via `scanInput()` for targeted use.
+- **L2: LLM Frontier Scanner** (`message_received` hook, high-risk channels only) — Nonce-delimited classification prompt, risk scoring 0-100. Fires conditionally: skips Telegram DMs (trusted), triggers on untrusted channels when L1 detects ambiguous input. Requires `l2LlmCall` config (disabled by default).
 - **L3: Outbound Content Gate** (`message_sending` + `llm_output` hooks) — Leaked secrets (18 patterns), internal paths (Unix+Windows+UNC), injection artifacts, exfil URLs, financial data. Modifies outbound messages to redact violations before delivery.
 - **L4: Redaction Pipeline** (`message_sending` + `llm_output` hooks) — API keys/tokens, personal emails (50+ provider domains, work subdomains preserved), phone numbers, dollar amounts. Pre-delivery enforcement.
 - **L5: Call Governor** (`llm_input` hook) — Rolling-window spend limits (monotonic clock), volume limits with per-caller overrides, lifetime counter, caller-scoped SHA-256 dedup, circuit breaker. Tracking only (void hook).
 - **L6: Access Control** (`before_tool_call` hook) — Path guards (30+ denied filenames, 18 denied extensions), URL safety (IPv4+IPv6 private ranges, DNS resolution with 3s timeout). Blocks tool calls to sensitive paths/URLs.
 
-**Plugin:** 5 hooks registered via `api.registerHook()`. Proxy at `127.0.0.1:18800` preserved as fallback.
+**Plugin:** 5 hook events registered via `api.registerHook()`, covering all 6 layers (L1+L2 share `message_received`). Proxy at `127.0.0.1:18800` preserved as fallback.
 
 **Tests:** 162 tests across 6 files. STRIDE threat model + security review applied (3 CRITICALs, 7 HIGHs, 6 MEDIUMs, 4 LOWs all fixed).
 
