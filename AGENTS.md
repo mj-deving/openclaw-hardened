@@ -48,7 +48,6 @@ See **CLAUDE.md → Beads Conventions (Repo Override)** for the creation-time co
 | `Reference/CONTEXT-ENGINEERING.md` | Markdown | 245 | Prompt caching, session persistence, memory tuning | [reference] |
 | `Reference/SECURITY-PATCHES.md` | Markdown | 107 | Version-specific security patches and action status | [reference] |
 | `Reference/UPGRADE-NOTES.md` | Markdown | 480 | Changelog across OpenClaw releases with deployment impact | [reference] |
-| `Reference/PAI-PIPELINE.md` | Markdown | 280 | Cross-agent pipeline: bot ↔ local agent architecture | [reference] |
 | `Reference/DATABASE-MAINTENANCE.md` | Markdown | ~120 | Compaction loop prevention, bot database baseline | [reference] |
 | `Reference/VOICE-AND-AUDIO.md` | Markdown | ~350 | STT research: cloud/self-hosted providers, Telegram voice, architecture patterns | [reference] |
 | `Reference/KNOWN-BUGS.md` | Markdown | ~250 | Systemic bugs: duplicate messages (7 root causes), silent polling death, cost impact | [reference] |
@@ -102,7 +101,6 @@ Reference/
   CONTEXT-ENGINEERING.md              # Prompt caching, session persistence, memory tuning
   SECURITY-PATCHES.md                 # Version-specific security patches and action status
   UPGRADE-NOTES.md                    # Comprehensive changelog across OpenClaw releases
-  PAI-PIPELINE.md                     # Cross-agent pipeline: bot ↔ local agent architecture
   DATABASE-MAINTENANCE.md             # Compaction loop prevention, bot database baseline
   VOICE-AND-AUDIO.md                  # STT research: cloud/self-hosted providers, Telegram voice, architecture
   KNOWN-BUGS.md                       # Systemic bugs: duplicate messages (7 root causes), silent polling death
@@ -118,15 +116,7 @@ src/
     auto-update.sh                    # Weekly update + security audit
   pipeline/
     send.sh / read.sh / status.sh     # Async messaging pipeline (local → bot)
-  pai-pipeline/
-    pai-submit.sh                     # Cross-agent task submission (forward pipeline)
-    pai-result.sh                     # Result reader with wait/ack modes
-    pai-status.sh                     # Pipeline dashboard (human + JSON output)
-    pai-escalation-submit.sh          # Auto-escalation handler (Layer 5)
-    pai-reverse-handler.sh            # Reverse-task processor via openclaw agent (Layer 6)
-    pai-reverse-watcher.py            # inotify watcher for reverse-tasks/
-    pai-overnight.sh                  # Overnight PRD queue coordinator (Layer 7)
-    pai-overnight-local.sh            # Local helper for overnight queue
+  pai-pipeline/                       # ARCHIVAL — Isidore Cloud retired 2026-04-27, source preserved for reference
   defense/
     layer1-sanitizer.ts               # L1: Deterministic text sanitizer
     layer2-scanner.ts                 # L2: LLM frontier scanner
@@ -149,15 +139,16 @@ src/
 
 ## Architecture
 
-### Dual-Agent System
+### Agent Topology (post-2026-04-27)
 
-Two AI agents run on the same VPS as separate Linux users, communicating through a shared filesystem pipeline:
+A single always-on bot runs on the VPS as the primary agent. The dual-agent / shared-filesystem-pipeline architecture documented in earlier revisions was retired 2026-04-27.
 
-> Names used here (primary bot, local agent) are generic -- substitute your actual bot and agent names.
+> Names used here (primary bot) are generic -- substitute your actual bot name.
 
-- **Primary bot** (`openclaw` user) — OpenClaw/Sonnet via Anthropic. Always-on Telegram bot for routine tasks. Auto-escalates complex tasks (security reviews, architecture, multi-file refactoring) to the local agent via PAI pipeline.
-- **Local agent** (`isidore_cloud` user) — Claude Code/Opus. On-demand heavy computation via `claude -p` bridge.
-- **PAI Pipeline** (`/var/lib/pai-pipeline/`) — Bidirectional shared directory with `pai` group permissions (2770 setgid). Forward: bot → local agent (tasks/results). Reverse: local agent → bot (reverse-tasks/reverse-results). Overnight: sequential PRD queue (overnight/). Includes auto-escalation (Layer 5), reverse-task watcher (Layer 6), and overnight queue (Layer 7). See `Reference/PAI-PIPELINE.md`.
+- **Primary bot** (`openclaw` user) — OpenClaw/Sonnet via Anthropic. Always-on Telegram bot. Compaction routes to OpenRouter (`openrouter/openai/gpt-4.1-mini`); embeddings via local Ollama (`nomic-embed-text:v1.5`).
+- **Secondary bot** (`dismas` user) — OpenClaw/GPT-5.4 via OpenAI Codex OAuth. Currently DOWN; redeploy deferred until a concrete capability gap is named.
+- **Retired 2026-04-27:** Isidore Cloud (`isidore_cloud` user, Claude Code/Opus on-demand heavy compute) and the bidirectional PAI pipeline at `/var/lib/pai-pipeline/`. `src/pai-pipeline/` source is retained in the repo as archival history. `Reference/PAI-PIPELINE.md` was deleted at retirement; consult git history for the as-built architecture (`git log -- Reference/PAI-PIPELINE.md`).
+- **Under evaluation:** Gregor → Codex CLI delegation for coding-only tasks (Phase 1: per-turn `model` override on `message_received` → `gpt-5.3-codex-spark`; Phase 2: bundled `codex-harness` plugin v2026.4.10+).
 
 ### 6-Layer Prompt Injection Defense
 
