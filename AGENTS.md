@@ -8,9 +8,29 @@ Security-first deployment blueprint for running OpenClaw on a self-hosted VPS. C
 
 ## Start Here
 
-1. **[README.md](README.md)** — Project overview, audience, and navigation
-2. **[GUIDE.md](GUIDE.md)** — The full deployment guide (15 phases, 2,800+ lines)
-3. **Reference docs** — Deep dives on specific topics (see File Index below)
+1. `CLAUDE.md` — Architecture, conventions, gotchas, Beads doctrine (read FIRST). [→ CLAUDE.md](CLAUDE.md)
+2. `AGENTS.md` — This file: machine-readable project context + Beads commands.
+3. `README.md` — Project overview, audience, navigation. [→ README.md](README.md)
+4. `GUIDE.md` — The full deployment guide (15 phases, 2,800+ lines). [→ GUIDE.md](GUIDE.md)
+5. Reference docs — Deep dives on specific topics (see File Index below).
+
+## Beads Commands (lifecycle)
+
+This repo uses Beads (`bd`) for task tracking. Auto-memory at `~/.claude/projects/-home-mj-projects-openclaw-bot/memory/` is for narrative continuity, NOT a substitute.
+
+```bash
+bd ready --json                                    # find available work
+bd show <id> --json                                # view issue details
+bd update <id> --claim --json                      # claim work
+bd comment <id> "progress observation" --json      # concurrent observations during work
+bd note <id> "durable summary" --json              # consolidated state visible in `bd show`
+bd close <id> --reason "completed" --json          # close on real completion / merge / supersession
+bd dolt pull || true                               # at session start (if remote configured)
+bd dolt push                                       # at session end
+bd batch <file>                                    # scripted multi-bead mutations
+```
+
+See **CLAUDE.md → Beads Conventions (Repo Override)** for the creation-time contract on every `bd create` (`--description`, `--context`, `--notes` with SOURCES/kn entry).
 
 ## File Index
 
