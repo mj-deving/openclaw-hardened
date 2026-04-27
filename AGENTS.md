@@ -52,7 +52,8 @@ See **CLAUDE.md → Beads Conventions (Repo Override)** for the creation-time co
 | `Reference/DATABASE-MAINTENANCE.md` | Markdown | ~120 | Compaction loop prevention, bot database baseline | [reference] |
 | `Reference/VOICE-AND-AUDIO.md` | Markdown | ~350 | STT research: cloud/self-hosted providers, Telegram voice, architecture patterns | [reference] |
 | `Reference/KNOWN-BUGS.md` | Markdown | ~250 | Systemic bugs: duplicate messages (7 root causes), silent polling death, cost impact | [reference] |
-| `Reference/DEFENSE-SYSTEM.md` | Markdown | ~400 | 6-layer prompt injection defense: architecture, STRIDE review, deployment | [reference] |
+| `Reference/DEFENSE-SYSTEM.md` | Markdown | ~400 | 6-layer prompt injection defense: architecture, STRIDE review, deployment, trajectory bundles | [reference] |
+| `Reference/THREAT-MODEL-CROSSREF.md` | Markdown | ~250 | Berman 6-layer ↔ MITRE ATLAS 16-threat mapping; gap analysis | [reference] |
 | `src/defense/` | TypeScript | ~1800 | 6-layer defense system: sanitizer, scanner, gate, redaction, governor, access control | [security] |
 | `src/defense/plugin/` | TypeScript | ~570 | Defense plugin: 5 hook events covering all 6 layers (primary enforcement) | [security] |
 | `src/defense/proxy/` | TypeScript | ~300 | Defense proxy: Bun HTTP server (inactive, code preserved) | [security] |
