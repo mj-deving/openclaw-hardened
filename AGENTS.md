@@ -83,6 +83,7 @@ See **CLAUDE.md → Beads Conventions (Repo Override)** for the creation-time co
 | `src/pai-pipeline/pai-overnight.sh` | Bash | ~340 | PAI pipeline: overnight PRD queue coordinator (Layer 7) | [utility] |
 | `src/pai-pipeline/pai-overnight-local.sh` | Bash | ~100 | PAI pipeline: local helper for overnight queue | [utility] |
 | `assets/social-preview.png` | PNG | — | GitHub social preview image (1280x640) | [asset] |
+| `Reference/CONCEPTS-INVENTORY.md` | Markdown | ~80 | OpenClaw concepts surveyed with adopt/defer/skip verdicts (memory engines, dreaming, active memory, experimental flags) | [reference] |
 
 ## Repository Map
 
