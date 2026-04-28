@@ -64,9 +64,9 @@ See **CLAUDE.md → Beads Conventions (Repo Override)** for the creation-time co
 | `src/scripts/health-check.sh` | Bash | 83 | Service health monitoring | [utility] |
 | `src/scripts/verify-binding.sh` | Bash | 38 | Gateway binding verification | [utility] |
 | `src/scripts/auto-update.sh` | Bash | 66 | Weekly update + security audit | [utility] |
-| `src/pipeline/send.sh` | Bash | 40 | Pipeline: send message to bot | [utility] |
-| `src/pipeline/read.sh` | Bash | 43 | Pipeline: read bot responses | [utility] |
-| `src/pipeline/status.sh` | Bash | 30 | Pipeline: check pipeline status | [utility] |
+| `src/pipeline/send.sh` | Bash | 40 | Pipeline: send message to bot — RETIRED 2026-04-28 | [archival] |
+| `src/pipeline/read.sh` | Bash | 43 | Pipeline: read bot responses — RETIRED 2026-04-28 | [archival] |
+| `src/pipeline/status.sh` | Bash | 30 | Pipeline: check pipeline status (now fail-fasts on missing VPS dir) | [archival] |
 | `src/pai-pipeline/pai-submit.sh` | Bash | 109 | PAI pipeline: submit task to local agent | [utility] |
 | `src/pai-pipeline/pai-result.sh` | Bash | 179 | PAI pipeline: read results with wait/ack modes | [utility] |
 | `src/pai-pipeline/pai-status.sh` | Bash | 106 | PAI pipeline: dashboard (human + JSON output) | [utility] |
