@@ -53,6 +53,7 @@ See **CLAUDE.md → Beads Conventions (Repo Override)** for the creation-time co
 | `Reference/KNOWN-BUGS.md` | Markdown | ~250 | Systemic bugs: duplicate messages (7 root causes), silent polling death, cost impact | [reference] |
 | `Reference/GREGOR-CRABBOX-RUNBOOK.md` | Markdown | ~250 | Telegram-to-Gregor Crabbox execution workflow for project coding tasks | [reference] |
 | `Reference/CRABBOX-HARDENING.md` | Markdown | ~360 | Crabbox doctrine: 2-component architecture (CLI+plugin), plugin-vs-shell fork, E2B-first provider verdict, 15 hardening rules, lease lifecycle, sync/secrets discipline | [reference] |
+| `Reference/PERSONAL-OS-BLUEPRINT.md` | Markdown | ~410 | Personal-OS doctrine derived from Moritz Kremb's Claudia: 4-layer model (Folder/Memory + Tools + Skills + Routines), OpenClaw vs Claude Code tradeoffs, V12 content pipeline, what-NOT-to-port list. Drives epic `openclaw-bot-o3n` (7 child beads). | [reference] |
 | `.crabboxignore` | Config | 25 | Crabbox sync exclusions: Interceptor screenshots, Plans/, .sessions/, local audit artifacts | [config] |
 | `Reference/DEFENSE-SYSTEM.md` | Markdown | ~400 | 6-layer prompt injection defense: architecture, STRIDE review, deployment, trajectory bundles | [reference] |
 | `Reference/THREAT-MODEL-CROSSREF.md` | Markdown | ~250 | Berman 6-layer ↔ MITRE ATLAS 16-threat mapping; gap analysis | [reference] |
