@@ -52,6 +52,8 @@ See **CLAUDE.md → Beads Conventions (Repo Override)** for the creation-time co
 | `Reference/VOICE-AND-AUDIO.md` | Markdown | ~350 | STT research: cloud/self-hosted providers, Telegram voice, architecture patterns | [reference] |
 | `Reference/KNOWN-BUGS.md` | Markdown | ~250 | Systemic bugs: duplicate messages (7 root causes), silent polling death, cost impact | [reference] |
 | `Reference/GREGOR-CRABBOX-RUNBOOK.md` | Markdown | ~250 | Telegram-to-Gregor Crabbox execution workflow for project coding tasks | [reference] |
+| `Reference/CRABBOX-HARDENING.md` | Markdown | ~360 | Crabbox doctrine: 2-component architecture (CLI+plugin), plugin-vs-shell fork, E2B-first provider verdict, 15 hardening rules, lease lifecycle, sync/secrets discipline | [reference] |
+| `.crabboxignore` | Config | 25 | Crabbox sync exclusions: Interceptor screenshots, Plans/, .sessions/, local audit artifacts | [config] |
 | `Reference/DEFENSE-SYSTEM.md` | Markdown | ~400 | 6-layer prompt injection defense: architecture, STRIDE review, deployment, trajectory bundles | [reference] |
 | `Reference/THREAT-MODEL-CROSSREF.md` | Markdown | ~250 | Berman 6-layer ↔ MITRE ATLAS 16-threat mapping; gap analysis | [reference] |
 | `src/defense/` | TypeScript | ~1800 | 6-layer defense system: sanitizer, scanner, gate, redaction, governor, access control | [security] |
@@ -106,6 +108,7 @@ Reference/
   VOICE-AND-AUDIO.md                  # STT research: cloud/self-hosted providers, Telegram voice, architecture
   KNOWN-BUGS.md                       # Systemic bugs: duplicate messages (7 root causes), silent polling death
   GREGOR-CRABBOX-RUNBOOK.md           # Telegram -> Gregor -> Crabbox coding execution workflow
+  CRABBOX-HARDENING.md                # Crabbox doctrine: architecture, plugin-vs-shell fork, E2B-first, 15 hardening rules
 
 src/
   config/
