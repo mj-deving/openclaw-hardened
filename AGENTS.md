@@ -54,11 +54,10 @@ See **CLAUDE.md → Beads Conventions (Repo Override)** for the creation-time co
 | `Reference/GREGOR-CRABBOX-RUNBOOK.md` | Markdown | ~250 | Telegram-to-Gregor Crabbox execution workflow for project coding tasks | [reference] |
 | `Reference/CRABBOX-HARDENING.md` | Markdown | ~360 | Crabbox doctrine: 2-component architecture (CLI+plugin), plugin-vs-shell fork, E2B-first provider verdict, 15 hardening rules, lease lifecycle, sync/secrets discipline | [reference] |
 | `Reference/FAIL-CLOSED-DOCTRINE.md` | Markdown | ~150 | Why main agent + subagent fallback chains are empty (I2/I6 invariants). Recovery via /model Telegram slash (channel-side, pre-LLM). Driven by 2026-05-14 Crabbox smoke where free-tier fallback hallucinated a binary-not-found diagnosis. | [reference] |
-| `Reference/PERSONAL-OS-BLUEPRINT.md` | Markdown | ~410 | Personal-OS doctrine derived from Moritz Kremb's Claudia: 4-layer model (Folder/Memory + Tools + Skills + Routines), OpenClaw vs Claude Code tradeoffs, V12 content pipeline, what-NOT-to-port list. Drives epic `openclaw-bot-o3n` (7 child beads). | [reference] |
 | `.crabboxignore` | Config | 25 | Crabbox sync exclusions: Interceptor screenshots, Plans/, .sessions/, local audit artifacts | [config] |
 | `Reference/DEFENSE-SYSTEM.md` | Markdown | ~400 | 6-layer prompt injection defense: architecture, STRIDE review, deployment, trajectory bundles | [reference] |
 | `Reference/THREAT-MODEL-CROSSREF.md` | Markdown | ~250 | Berman 6-layer ↔ MITRE ATLAS 16-threat mapping; gap analysis | [reference] |
-| `Reference/MORITZ-BLUEPRINT.md` | Markdown | ~280 | Moritz Kram OpenClaw masterclass (fd4k16REDOU) mapped to Gregor: 10-step gap analysis, 5 bead actions, publish-back angles | [reference] |
+| `Reference/MORITZ-BLUEPRINT.md` | Markdown | ~290 | Unified Moritz Kremb Personal-OS doctrine (both episodes: Peter Yang 4-layer model + Greg Eisenberg 10-step walkthrough). Adopt-list (memory loop, TOOLS.md, CLI>MCP>API, SOUL.md, GWS CLI), what-NOT-to-port, V12 pipeline. Drives epic `openclaw-bot-k0a`. | [reference] |
 | `src/defense/` | TypeScript | ~1800 | 6-layer defense system: sanitizer, scanner, gate, redaction, governor, access control | [security] |
 | `src/defense/plugin/` | TypeScript | ~570 | Defense plugin: 5 hook events covering all 6 layers (primary enforcement) | [security] |
 | `src/defense/proxy/` | TypeScript | ~300 | Defense proxy: Bun HTTP server (inactive, code preserved) | [security] |
